@@ -1,0 +1,55 @@
+services:
+  ollama: # Создание контейнера LLM
+    container_name: ollama
+    image: ollama/ollama
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./ollama:/root/.ollama
+    networks:
+      - my_network
+    gpus: all
+  telegram: # Создание контейнера для файлов main.py и db_main.py
+    container_name: tg
+    build: ./telegram
+    depends_on:
+      - redis
+    restart: always
+    networks:
+      - my_network
+  db: # Создание контейнера для PostgreSQL
+    container_name: db
+    image: postgres
+    restart: always
+    volumes:
+      - ./db:/var/lib/postgresql/data/pgdata
+    environment:
+      POSTGRES_PASSWORD: qwerty
+      POSTGRES_USER: postgres
+      POSTGRES_DB: genai_kirdrey
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5433:5432"
+    networks:
+      - my_network
+  web: # Создание контейнера для web-интерфейса
+    container_name: web
+    build: ./web
+    depends_on:
+      - redis
+    restart: always
+    volumes:
+      - ./web/logs:/logs
+    ports:
+      - "8501:8501"
+    networks:
+      - my_network
+  redis: # Создание контейнера для связи между другими контейнерами
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - my_network
+networks: # Подключение всех контейнеров к одной сети
+  my_network:
